@@ -12,7 +12,7 @@ disc_size = 0.01
 # disc_factor
 disc_factor = 1/disc_size
 # Max LiDAR Range
-max_lidar_range = 3.0
+max_lidar_range = 5.0
 # max_lidar_rangeとdisc_factorを使って画像サイズを設定する
 img_size = int(max_lidar_range*2*disc_factor)
 # 画像を表示するか否かのフラグ
@@ -63,7 +63,7 @@ class LaserToImg(Node):
 
         # 画像の表示処理. imgshow_flgがTrueの場合のみ表示する
         if imgshow_flg:
-            img = self.bridge.cv2_to_imgmsg(blank_img, encoding="bgr8")
+            cv2.imshow('laser_to_image', blank_img), cv2.waitKey(3)
             #更新のため一旦消す
             blank_img = np.zeros((img_size, img_size, 3))
         else:
