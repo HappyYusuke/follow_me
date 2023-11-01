@@ -12,7 +12,7 @@ disc_size = 0.01
 # disc_factor
 disc_factor = 1/disc_size
 # Max LiDAR Range
-max_lidar_range = 5.0
+max_lidar_range = 3.5
 # max_lidar_rangeとdisc_factorを使って画像サイズを設定する
 img_size = int(max_lidar_range*2*disc_factor)
 # 画像を表示するか否かのフラグ
@@ -23,15 +23,20 @@ class LaserToImg(Node):
         super().__init__('laser_to_img_node')
         # Subscriber
         self.create_subscription(LaserScan, '/scan', self.cloud_to_img_callback, qos_profile_sensor_data)
+        # OpenCV
         self.bridge = CvBridge()
 
     def cloud_to_img_callback(self, scan):
+        # LiDARデータ
         maxAngle = scan.angle_max
         minAngle = scan.angle_min
         angleInc = scan.angle_increment
         maxLength = scan.range_max
         ranges = scan.ranges
+        #intensities = scan.intensities
+        # 距離データの個数を格納
         num_pts = len(ranges)
+        # 721行2列の空行列を作成
         xy_scan = np.zeros((num_pts, 2))
         # 3チャンネルの白色ブランク画像を作成
         blank_img = np.zeros((img_size, img_size, 3), dtype=np.uint8) + 255
@@ -43,8 +48,8 @@ class LaserToImg(Node):
             else:
                 # 角度とXY座標の算出処理
                 angle = minAngle + float(i)*angleInc
-                xy_scan[i][1] = float(ranges[i]*math.cos(angle))
-                xy_scan[i][0] = float(ranges[i]*math.sin(angle))
+                xy_scan[i][1] = float(ranges[i]*math.cos(angle))  # y座標
+                xy_scan[i][0] = float(ranges[i]*math.sin(angle))  # x座標
 
         # ブランク画像にプロットする処理
         for i in range(num_pts):
