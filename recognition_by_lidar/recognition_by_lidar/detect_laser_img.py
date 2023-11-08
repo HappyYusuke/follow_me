@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 import math
+from ultralytics import YOLO
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import LaserScan, Image
@@ -18,11 +19,12 @@ img_size = int(max_lidar_range*2*disc_factor)
 # 画像を表示するか否かのフラグ
 imgshow_flg = True
 
+# YOLO
+model = YOLO('/home/demulab/kanazawa_ws/src/follow_me/recognition_by_lidar/weights/best.pt')
+
 class LaserToImg(Node):
     def __init__(self):
         super().__init__('laser_to_img_node')
-        # Publisher
-        self.pub = self.create_publisher(Image, '/laser_img', 10)
         # Subscriber
         self.create_subscription(LaserScan, '/scan', self.cloud_to_img_callback, qos_profile_sensor_data)
         # OpenCV
@@ -66,12 +68,13 @@ class LaserToImg(Node):
                     blank_img[pix_y, pix_x] = [0, 0, 0]
 
         # CV2画像からROSメッセージに変換してトピックとして配布する
-        img = self.bridge.cv2_to_imgmsg(blank_img, encoding="bgr8")
-        self.pub.publish(img)
+        # 後で書く
 
         # 画像の表示処理. imgshow_flgがTrueの場合のみ表示する
         if imgshow_flg:
-            cv2.imshow('laser_to_image', blank_img), cv2.waitKey(3)
+            results = model(blank_img)
+            annotated_frame = results[0].plot()
+            cv2.imshow('YOLOv8 Inference', annotated_frame), cv2.waitKey(3)
             #更新のため一旦消す
             blank_img = np.zeros((img_size, img_size, 3))
         else:
