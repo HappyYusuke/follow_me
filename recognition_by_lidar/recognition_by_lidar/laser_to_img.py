@@ -16,7 +16,7 @@ max_lidar_range = 3.5
 # max_lidar_rangeとdisc_factorを使って画像サイズを設定する
 img_size = int(max_lidar_range*2*disc_factor)
 # 画像を表示するか否かのフラグ
-imgshow_flg = True
+imgshow_flg = False
 
 class LaserToImg(Node):
     def __init__(self):
@@ -71,7 +71,7 @@ class LaserToImg(Node):
 
         # 画像の表示処理. imgshow_flgがTrueの場合のみ表示する
         if imgshow_flg:
-            cv2.imshow('laser_to_image', blank_img), cv2.waitKey(3)
+            cv2.imshow('laser_image', blank_img)
             #更新のため一旦消す
             blank_img = np.zeros((img_size, img_size, 3))
         else:

@@ -8,10 +8,11 @@ from cv_bridge import CvBridge, CvBridgeError
 class LaserImgshow(Node):
     def __init__(self):
         super().__init__('laser_imgshow_node')
-        self.sub_img = self.create_subscription(Image, '/laser_img', self.show_img)
+        self.sub_img = self.create_subscription(Image, '/laser_img', self.show_img, 10)
+        self.bridge = CvBridge()
 
     def show_img(self, msg):
-        img = CvBridge.imgmsg_to_cv2(msg)
+        img = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
         cv2.imshow('laser_image', img)
         cv2.waitKey(1)
 
