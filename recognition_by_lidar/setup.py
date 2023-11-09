@@ -23,6 +23,7 @@ setup(
             'laser_to_img = recognition_by_lidar.laser_to_img:main',
             'laser_imgshow = recognition_by_lidar.laser_imgshow:main',
             'detect_laser_img = recognition_by_lidar.detect_laser_img:main',
+            'laser_imgfile_maker = recognition_by_lidar.laser_imgfile_maker:main',
         ],
     },
 )
