@@ -1,4 +1,6 @@
 import numpy as np
+import os
+import sys
 import cv2
 import math
 import rclpy
@@ -6,6 +8,9 @@ from rclpy.node import Node
 from sensor_msgs.msg import LaserScan, Image
 from rclpy.qos import qos_profile_sensor_data
 from cv_bridge import CvBridge, CvBridgeError
+# Custom
+from .modules.gradient import gradation_3d_img as gradation
+
 
 # 縮小サイズを取得. 1[pixel] = 0.01[mm]pixel
 disc_size = 0.01
@@ -27,6 +32,8 @@ class LaserToImg(Node):
         self.create_subscription(LaserScan, '/scan', self.cloud_to_img_callback, qos_profile_sensor_data)
         # OpenCV
         self.bridge = CvBridge()
+        # Value
+        self.color_list = gradation([0,0,255], [255,0,0], [1, 100], [True,True,True])[0] 
 
     def cloud_to_img_callback(self, scan):
         # LiDARデータ
@@ -35,6 +42,7 @@ class LaserToImg(Node):
         angleInc = scan.angle_increment
         maxLength = scan.range_max
         ranges = scan.ranges
+        intensity = scan.intensity
         #intensities = scan.intensities
         # 距離データの個数を格納
         num_pts = len(ranges)
@@ -63,7 +71,9 @@ class LaserToImg(Node):
                 if (pix_x > img_size) or (pix_y > img_size):
                     print("Error")
                 else:
-                    blank_img[pix_y, pix_x] = [0, 0, 0]
+                    # 色を付ける処理（赤:高, 青:低）
+                    colorMap_num = int((intensity(i)+min(intensity))/max(intensity) * 100)
+                    blank_img[pix_y, pix_x] = self.color_list[colorMap_num]  # [0, 0, 0]
 
         # CV2画像からROSメッセージに変換してトピックとして配布する
         img = self.bridge.cv2_to_imgmsg(blank_img, encoding="bgr8")
