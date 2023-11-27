@@ -42,7 +42,7 @@ class LaserToImg(Node):
         angleInc = scan.angle_increment
         maxLength = scan.range_max
         ranges = scan.ranges
-        intensity = scan.intensity
+        intensities = scan.intensities
         #intensities = scan.intensities
         # 距離データの個数を格納
         num_pts = len(ranges)
@@ -72,8 +72,8 @@ class LaserToImg(Node):
                     print("Error")
                 else:
                     # 色を付ける処理（赤:高, 青:低）
-                    colorMap_num = int((intensity(i)+min(intensity))/max(intensity) * 100)
-                    blank_img[pix_y, pix_x] = self.color_list[colorMap_num]  # [0, 0, 0]
+                    #colorMap_num = int((intensities(i)+min(intensities))/max(intensities) * 100)
+                    blank_img[pix_y, pix_x] = [0, 0, 0] #self.color_list[colorMap_num]
 
         # CV2画像からROSメッセージに変換してトピックとして配布する
         img = self.bridge.cv2_to_imgmsg(blank_img, encoding="bgr8")
@@ -81,7 +81,7 @@ class LaserToImg(Node):
 
         # 画像の表示処理. imgshow_flgがTrueの場合のみ表示する
         if imgshow_flg:
-            cv2.imshow('laser_image', blank_img)
+            cv2.imshow('laser_img', blank_img)
             #更新のため一旦消す
             blank_img = np.zeros((img_size, img_size, 3))
         else:
