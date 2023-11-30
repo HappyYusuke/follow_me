@@ -8,8 +8,6 @@ from cv_bridge import CvBridge, CvBridgeError
 from yolov8_msgs.msg import DetectionArray
 
 
-disc_size = 0.01
-
 
 class PersonDetector(Node):
     def __init__(self):
@@ -71,17 +69,18 @@ class PersonDetector(Node):
         self.target_px.clear()
         # Get parameters
         target_dist = self.get_parameter('target_dist').value
+        discrete_size = self.get_parameter('discrete_size').value
         # 画像の中心を算出
         robot_x = round(self.height / 2)
         robot_y = round(self.width / 2)
         # 目標座標を生成(px): 横x, 縦y
         target_x = round(self.center_x)
-        target_y = round(self.center_y + (target_dist/disc_size))
+        target_y = round(self.center_y + (target_dist/discrete_size))
         self.target_px.append(target_x)
         self.target_px.append(target_y)
         # 目標座標を生成(m): 縦x, 横y(ロボット座標系に合わせる)
-        self.target_point.x = (robot_x - target_y)*disc_size
-        self.target_point.y = (robot_y - target_x)*disc_size
+        self.target_point.x = (robot_x - target_y)*discrete_size
+        self.target_point.y = (robot_y - target_x)*discrete_size
         # パブリッシュ
         self.pub.publish(self.target_point)
 

@@ -1,26 +1,27 @@
-laser_to_img:
+/follow_me/laser_to_img:
   ros__parameters:
     # 縮小サイズを取得. 1[px] = 0.01[m]
-    discrete_size: 0.01
+    discrete_size: &discrete_size 0.01
     # Max LiDAR Range
     max_lidar_range: 3.5
     # 画像を表示するフラッグ
     img_show_flg: False
 
-#person_detector:
-#  ros__parameters:
-#    # 追従対象者との距離
-#    target_dist: 0.5
-#
-#base_controller:
-#  ros_parameters:
-#    # ロボットからみてtolerance[°]以内だったら積分制御しない視野角
-#    tolerance: 1.0
-#    # 積分制御をし始める視野角[°]
-#    i_range: 3.0
-#    # Pゲイン
-#    kp: 0.1
-#    # Iゲイン
-#    ki: 0.0
-#    # Dゲイン
-#    kd: 0.0
+/follow_me/person_detector:
+  ros__parameters:
+    discrete_size: *discrete_size
+    # 追従対象者との距離
+    target_dist: 0.5
+
+/follow_me/base_controller:
+  ros_parameters:
+    # ロボットからみてtolerance[°]以内だったら積分制御しない視野角
+    tolerance: 1.0
+    # 積分制御をし始める視野角[°]
+    i_range: 3.0
+    # Pゲイン
+    kp: 0.1
+    # Iゲイン
+    ki: 0.0
+    # Dゲイン
+    kd: 0.0

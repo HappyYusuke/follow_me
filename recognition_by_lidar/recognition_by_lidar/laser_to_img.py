@@ -13,17 +13,6 @@ from cv_bridge import CvBridge, CvBridgeError
 from .modules.gradient import gradation_3d_img as gradation
 
 
-## 縮小サイズを取得. 1[pixel] = 0.01[mm]pixel
-#disc_size = 0.01
-## disc_factor
-#disc_factor = 1/disc_size
-## Max LiDAR Range
-#max_lidar_range = 3.5
-## max_lidar_rangeとdisc_factorを使って画像サイズを設定する
-#img_size = int(max_lidar_range*2*disc_factor)
-## 画像を表示するか否かのフラグ
-#imgshow_flg = False
-
 class LaserToImg(Node):
     def __init__(self):
         super().__init__('laser_to_img')
