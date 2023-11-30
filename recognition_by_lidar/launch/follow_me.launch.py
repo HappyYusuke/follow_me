@@ -22,14 +22,14 @@ def generate_launch_description():
             parameters=[config],
             output='screen',
             respawn=True),
-        #Node(
-        #    namespace=namespace,
-        #    package='recognition_by_lidar',
-        #    executable='person_detector',
-        #    name='person_detector',
-        #    parameters=[config],
-        #    output='screen',
-        #    respawn=True),
+        Node(
+            namespace=namespace,
+            package='recognition_by_lidar',
+            executable='person_detector',
+            name='person_detector',
+            parameters=[config],
+            output='screen',
+            respawn=True),
         #Node(
         #    namespace=namespace,
         #    package='recognition_by_lidar',

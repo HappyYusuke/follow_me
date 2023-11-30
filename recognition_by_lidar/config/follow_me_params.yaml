@@ -7,11 +7,11 @@
     # 画像を表示するフラッグ
     img_show_flg: False
 
-      #/follow_me/person_detector:
-      #  ros__parameters:
-      #    # 追従対象者との距離
-      #    target_dist: 0.5
-      #
+/follow_me/person_detector:
+  ros__parameters:
+    # 追従対象者との距離
+    target_dist: 0.5
+  
       #/follow_me/base_controller:
       #  ros_parameters:
       #    # ロボットからみてtolerance[°]以内だったら積分制御しない視野角
