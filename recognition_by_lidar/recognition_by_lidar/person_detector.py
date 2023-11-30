@@ -24,6 +24,7 @@ class PersonDetector(Node):
                 namespace='',
                 parameters=[
                     ('target_dist', Prameter.Type.STRING)])
+        # Service
         # Value
         self.center_x = self.center_y = None
         self.target_point = Point()
