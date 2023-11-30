@@ -1,26 +1,31 @@
 import cv2
 import rclpy
 from rclpy.node import Node
+from rclpy.parameter import Parameter
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import Point
 from cv_bridge import CvBridge, CvBridgeError
 from yolov8_msgs.msg import DetectionArray
 
 
-target_dist = 0.5
 disc_size = 0.01
 
 
 class PersonDetector(Node):
     def __init__(self):
-        super().__init__('person_detector_node')
+        super().__init__('person_detector')
+        # OpenCV Bridge
+        self.bridge = CvBridge()
         # Publisher
         self.pub = self.create_publisher(Point, '/follow_me/target_point', 10)
         # Subscriber
         self.create_subscription(DetectionArray, '/yolo/detections', self.yolo_callback, 10)
         self.create_subscription(Image, '/yolo/dbg_image', self.img_show, 10)
-        self.bridge = CvBridge()
-        #self.create_publisher()
+        # Parameters
+        self.declare_parameters(
+                namespace='',
+                parameters=[
+                    ('target_dist', Prameter.Type.STRING)])
         # Value
         self.center_x = self.center_y = None
         self.target_point = Point()
@@ -36,9 +41,6 @@ class PersonDetector(Node):
             person = receive_msg.detections
             self.center_x = person[0].bbox.center.position.x
             self.center_y = person[0].bbox.center.position.y
-        #for data in result:
-        #    data.bbox.center.position.x
-        #print(result[0])
 
     def plot_robot_point(self):
         # 画像の中心を算出
@@ -67,17 +69,19 @@ class PersonDetector(Node):
 
     def generate_target(self):
         self.target_px.clear()
+        # Get parameters
+        target_dist = self.get_parameter('target_dist').value
         # 画像の中心を算出
-        robot_x = round(self.width / 2)
-        robot_y = round(self.height / 2)
-        # 目標座標を生成(px)
+        robot_x = round(self.height / 2)
+        robot_y = round(self.width / 2)
+        # 目標座標を生成(px): 横x, 縦y
         target_x = round(self.center_x)
         target_y = round(self.center_y + (target_dist/disc_size))
         self.target_px.append(target_x)
         self.target_px.append(target_y)
-        # 目標座標を生成(m)
-        self.target_point.x = -1*(robot_x - target_x)*disc_size
-        self.target_point.y = (robot_y - target_y)*disc_size
+        # 目標座標を生成(m): 縦x, 横y(ロボット座標系に合わせる)
+        self.target_point.x = (robot_x - target_y)*disc_size
+        self.target_point.y = (robot_y - target_x)*disc_size
         # パブリッシュ
         self.pub.publish(self.target_point)
 
@@ -99,6 +103,7 @@ def main():
     rclpy.init()
     node = PersonDetector()
     try:
+        node.get_logger().info('Running')
         rclpy.spin(node)
     except KeyboardInterrupt:
         pass

@@ -1,3 +1,5 @@
+import os
+from glob import glob
 from setuptools import find_packages, setup
 
 package_name = 'recognition_by_lidar'
@@ -11,6 +13,10 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        (os.path.join('share', package_name, 'launch'),
+            glob('launch/*.launch.py')),
+        (os.path.join('share', package_name, 'config'),
+            glob('config/*.yaml'))
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -23,7 +29,7 @@ setup(
         'console_scripts': [
             'laser_to_img = recognition_by_lidar.laser_to_img:main',
             'laser_imgshow = recognition_by_lidar.laser_imgshow:main',
-            'person_detecter = recognition_by_lidar.person_detecter :main',
+            'person_detector = recognition_by_lidar.person_detector :main',
             'laser_imgfile_maker = recognition_by_lidar.laser_imgfile_maker:main',
             'base_controller = recognition_by_lidar.base_controller:main',
         ],

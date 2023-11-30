@@ -5,6 +5,7 @@ import cv2
 import math
 import rclpy
 from rclpy.node import Node
+from rclpy.parameter import Parameter
 from sensor_msgs.msg import LaserScan, Image
 from rclpy.qos import qos_profile_sensor_data
 from cv_bridge import CvBridge, CvBridgeError
@@ -12,30 +13,46 @@ from cv_bridge import CvBridge, CvBridgeError
 from .modules.gradient import gradation_3d_img as gradation
 
 
-# 縮小サイズを取得. 1[pixel] = 0.01[mm]pixel
-disc_size = 0.01
-# disc_factor
-disc_factor = 1/disc_size
-# Max LiDAR Range
-max_lidar_range = 3.5
-# max_lidar_rangeとdisc_factorを使って画像サイズを設定する
-img_size = int(max_lidar_range*2*disc_factor)
-# 画像を表示するか否かのフラグ
-imgshow_flg = False
+## 縮小サイズを取得. 1[pixel] = 0.01[mm]pixel
+#disc_size = 0.01
+## disc_factor
+#disc_factor = 1/disc_size
+## Max LiDAR Range
+#max_lidar_range = 3.5
+## max_lidar_rangeとdisc_factorを使って画像サイズを設定する
+#img_size = int(max_lidar_range*2*disc_factor)
+## 画像を表示するか否かのフラグ
+#imgshow_flg = False
 
 class LaserToImg(Node):
     def __init__(self):
-        super().__init__('laser_to_img_node')
+        super().__init__('laser_to_img')
         # Publisher
-        self.pub = self.create_publisher(Image, '/laser_img', 10)
+        self.pub = self.create_publisher(Image, '/follow_me/laser_img', 10)
         # Subscriber
         self.create_subscription(LaserScan, '/scan', self.cloud_to_img_callback, qos_profile_sensor_data)
         # OpenCV
         self.bridge = CvBridge()
+        # Parameters
+        self.declare_parameters(
+                namespace='',
+                parameters=[
+                    ('discrete_size', Parameter.Type.DOUBLE),
+                    ('max_lidar_range', Parameter.Type.DOUBLE),
+                    ('img_show_flg', Parameter.Type.BOOL)])
         # Value
         self.color_list = gradation([0,0,255], [255,0,0], [1, 100], [True,True,True])[0] 
 
     def cloud_to_img_callback(self, scan):
+        # Get parameters
+        discrete_size = self.get_parameter('discrete_size').value
+        max_lidar_range = self.get_parameter('max_lidar_range').value
+        img_show_flg = self.get_parameter('img_show_flg').value
+        # discrete_factor
+        discrete_factor = 1/discrete_size
+        # max_lidar_rangeとdiscrete_factorを使って画像サイズを設定する
+        img_size = int(max_lidar_range*2*discrete_factor)
+
         # LiDARデータ
         maxAngle = scan.angle_max
         minAngle = scan.angle_min
@@ -44,6 +61,7 @@ class LaserToImg(Node):
         ranges = scan.ranges
         intensities = scan.intensities
         #intensities = scan.intensities
+        
         # 距離データの個数を格納
         num_pts = len(ranges)
         # 721行2列の空行列を作成
@@ -80,7 +98,7 @@ class LaserToImg(Node):
         self.pub.publish(img)
 
         # 画像の表示処理. imgshow_flgがTrueの場合のみ表示する
-        if imgshow_flg:
+        if img_show_flg:
             cv2.imshow('laser_img', blank_img)
             #更新のため一旦消す
             blank_img = np.zeros((img_size, img_size, 3))
