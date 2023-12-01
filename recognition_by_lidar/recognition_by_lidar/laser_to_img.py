@@ -37,6 +37,13 @@ class LaserToImg(Node):
         self.img_show_flg = self.get_parameter('img_show_flg').value
         # Values
         self.color_list = gradation([0,0,255], [255,0,0], [1, 100], [True,True,True])[0]
+        # Output
+        self.output_screen()
+
+    def output_screen(self):
+        self.get_logger().info(f"discrete_size: {self.discrete_size}")
+        self.get_logger().info(f"max_lidar_range: {self.max_lidar_range}")
+        self.get_logger().info(f"img_show_flg: {self.img_show_flg}")
 
     def param_callback(self, params):
         for param in params:
@@ -114,5 +121,5 @@ def main():
         rclpy.spin(node)
     except KeyboardInterrupt:
         pass
-    laser_to_img.destroy_node()
+    node.destroy_node()
     rclpy.shutdown()

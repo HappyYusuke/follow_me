@@ -3,6 +3,7 @@ import math
 import rclpy
 from rclpy.node import Node
 from rclpy.parameter import Parameter
+from rcl_interfaces.msg import SetParametersResult
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist, Point
 
@@ -24,16 +25,42 @@ class BaseController(Node):
                     ('kp', Parameter.Type.DOUBLE),
                     ('ki', Parameter.Type.DOUBLE),
                     ('kd', Parameter.Type.DOUBLE)])
+        self.add_on_set_parameters_callback(self.param_callback)
+        # Get parameters
+        self.tolerance = self.get_parameter('tolerance').value
+        self.i_range = self.get_parameter('i_range').value
+        self.kp = self.get_parameter('kp').value
+        self.ki = self.get_parameter('ki').value
+        self.kd = self.get_parameter('kd').value
         # Value
         self.twist = Twist()
         self.angle = 0.0
         self.delta_t = 0.0
         self.robot_angular_vel = 0.0
-        self.tolerance = 0.0
-        self.i_range = 0.0
-        self.kp = 0.0
-        self.ki = 0.0
-        self.kd = 0.0
+        # Output
+        self.output_screen()
+
+    def output_screen(self):
+        self.get_logger().info(f"tolerance: {self.tolerance}")
+        self.get_logger().info(f"i_range: {self.i_range}")
+        self.get_logger().info(f"kp: {self.kp}")
+        self.get_logger().info(f"ki: {self.ki}")
+        self.get_logger().info(f"kd: {self.kd}")
+
+    def param_callback(self, params):
+        for param in params:
+            if param.name == 'tolerance':
+                self.tolerance = param.value
+            elif param.name == 'i_range':
+                self.i_range = param.value
+            elif param.name == 'kp':
+                self.kp = param.value
+            elif param.name == 'ki':
+                self.ki = param.value
+            else:
+                self.kd = param.value
+        self.get_logger().info(f"Set param: {param.name} >>> {param.value}")
+        return SetParametersResult(successful=True)
 
     def point_to_angle(self, point):
         return math.degrees(math.atan2(point.y, point.x))

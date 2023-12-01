@@ -30,13 +30,13 @@ def generate_launch_description():
             parameters=[config],
             output='screen',
             respawn=True),
-        #Node(
-        #    namespace=namespace,
-        #    package='recognition_by_lidar',
-        #    executable='base_controller',
-        #    name='base_controller',
-        #    parameters=[config],
-        #    output='screen',
-        #    respawn=True,
-        #    on_exit=launch.actions.Shutdown()),
+        Node(
+            namespace=namespace,
+            package='recognition_by_lidar',
+            executable='base_controller',
+            name='base_controller',
+            parameters=[config],
+            output='screen',
+            respawn=True,
+            on_exit=launch.actions.Shutdown()),
         ])

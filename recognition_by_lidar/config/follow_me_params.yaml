@@ -12,15 +12,15 @@
     # 追従対象者との距離
     target_dist: 0.5
   
-      #/follow_me/base_controller:
-      #  ros_parameters:
-      #    # ロボットからみてtolerance[°]以内だったら積分制御しない視野角
-      #    tolerance: 1.0
-      #    # 積分制御をし始める視野角[°]
-      #    i_range: 3.0
-      #    # Pゲイン
-      #    kp: 0.1
-      #    # Iゲイン
-      #    ki: 0.0
-      #    # Dゲイン
-      #    kd: 0.0
+/follow_me/base_controller:
+  ros__parameters:
+    # ロボットからみてtolerance[°]以内だったら積分制御しない視野角
+    tolerance: 1.0
+    # 積分制御をし始める視野角[°]
+    i_range: 3.0
+    # Pゲイン
+    kp: 0.1
+    # Iゲイン
+    ki: 0.0
+    # Dゲイン
+    kd: 0.0
