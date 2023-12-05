@@ -90,18 +90,11 @@ class BaseController(Node):
         return value
 
     def pid_update(self):
-        # Get parameters
-        self.tolerance = self.get_parameter('tolerance').value
-        self.i_range = self.get_parameter('i_range').value
-        self.kp = self.get_parameter('kp').value
-        self.ki = self.get_parameter('ki').value
-        self.kd = self.get_parameter('kd').value
-
         p_term = self.p_control()
         d_term = self.d_control(p_term)
         i_term = self.i_control(p_term, d_term)
 
-        self.twist.angular.z = p_term + i_term + d_term
+        self.twist.angular.z = -1*(p_term + i_term + d_term)
         self.pub.publish(self.twist)
 
     def execute(self, rate=100):
