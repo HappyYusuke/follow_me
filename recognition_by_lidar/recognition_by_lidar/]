@@ -33,15 +33,13 @@ class PersonDetector(Node):
                 parameters=[
                     ('target_dist', Parameter.Type.DOUBLE),
                     ('init_time', Parameter.Type.DOUBLE),
-                    ('none_person_flg', Parameter.Type.BOOL),
-                    ('target_diff', Parameter.Type.DOUBLE)])
+                    ('none_person_flg', Parameter.Type.BOOL)])
         self.add_on_set_parameters_callback(self.param_callback)
         # Get parameters
         self.param_dict ={}
         self.param_dict['target_dist'] = self.get_parameter('target_dist').value
         self.param_dict['init_time'] = self.get_parameter('init_time').value
         self.param_dict['none_person_flg'] = self.get_parameter('none_person_flg').value
-        self.param_dict['target_diff'] = self.get_parameter('target_diff').value
         self.param_dict['discrete_size'] = self.get_param()  # laser_to_imgからもってくる
         # Value
         self.person_list = []
@@ -86,6 +84,7 @@ class PersonDetector(Node):
         if not receive_msg.detections:
             self.center_x = self.center_y = None
         else:
+            #self.center_x, self.center_y = self.select_target(receive_msg.detections)
             self.person_list.clear()
             for person in receive_msg.detections:
                 px = Point()
@@ -118,77 +117,58 @@ class PersonDetector(Node):
                    color = (255, 0, 0),
                    thickness = 2)
 
-    def diff_distance(self, data):
-        diff = abs(data - self.before_data[0])
-        if diff >= self.param_dict['target_diff']:
-            diff = None
-        return diff
-
     def select_target(self, robot_px_x, robot_px_y):
         # personまでの距離と座標のリストを作成
         data_list = []
         for person_px in self.person_list:
             person_point = Point()
-            person_point.x = (robot_px_x - person_px.y)*self.param_dict['discrete_size']
-            person_point.y = (robot_px_y - person_px.x)*self.param_dict['discrete_size']
+            person_px_x = person_px.x
+            person_px_y = person_px.y + (self.param_dict['target_dist']/self.param_dict['discrete_size'])
+            person_point.x = (robot_px_x - person_px_y)*self.param_dict['discrete_size']
+            person_point.y = (robot_px_y - person_px_x)*self.param_dict['discrete_size']
             distance = math.sqrt(person_point.x**2 + person_point.y**2)
-            data_list.append([distance, person_point, [person_px.x, person_px.y]])
+            data_list.append([distance, person_point])
+        # 距離に誤差が少ないpersonを追従対象とする
+        
         # 起動時に最も近い人物を追従対象とする
         if self.param_dict['none_person_flg']:
-            result = min(data_list)
+            result = min(data_list)[1]
             self.param_dict['none_person_flg'] = False
-        else:
-            # 距離に誤差が少ないpersonを追従対象とする
-            data_list = [[self.diff_distance(data[0]), data[1], data[2]] for data in data_list]
-            # 追従対象が消失して他のpersonに引っ張られたらresult=False
-            if data_list[0] is None:
-                result = None
-            else:
-                result = min(data_list)
-                # 計算のために距離を保存
-                self.before_data = result
-        self.before_data = result
-        return result
+        self.before_data
+        return result.x, result.y
 
     def generate_target(self):
+        # 追従目標を選定
+        if self.param_dict['none_person_flg']:
+            time.sleep(self.param_dict['init_time'])
+        self.center_x, self.center_y = self.select_target(robot_x, robot_y)
         self.target_px.clear()
         # 画像の中心を算出
         robot_x = self.height / 2
         robot_y = self.width / 2
-        # 追従目標を選定
-        if self.param_dict['none_person_flg']:
-            time.sleep(self.param_dict['init_time'])
-            target_person = self.select_target(robot_x, robot_y)
-            if target_person is None:
-                return False
-            result_point = target_person[1]
-            self.center_x = target_person[2][0]
-            self.center_y = target_person[2][1]
-        return result_point
+        # 目標座標を生成(px): 横x, 縦y
         
+        target_x = self.center_x
+        target_y = self.center_y + (self.param_dict['target_dist']/self.param_dict['discrete_size'])
+        self.target_px.append(target_x)
+        self.target_px.append(target_y)
+        # 目標座標を生成(m): 縦x, 横y(ロボット座標系に合わせる)
+        self.target_point.x = (robot_x - target_y)*self.param_dict['discrete_size']
+        self.target_point.y = (robot_y - target_x)*self.param_dict['discrete_size']
+        # パブリッシュ
+        self.pub.publish(self.target_point)
 
     def img_show(self, receive_msg):
         self.laser_img = self.bridge.imgmsg_to_cv2(receive_msg, desired_encoding='bgr8')
         self.height, self.width, _ = self.laser_img.shape[:3]
         self.plot_robot_point()
-        target_point = self.generate_target()
-        if target_point:
+        if self.center_x == self.center_y == None:
             self.target_point.x = 0.0
             self.target_point.y = 0.0
             self.pub.publish(self.target_point)
             pass
         else:
-            # 目標座標を生成(px): 横x, 縦y
-            target_x = self.center_x
-            target_y = self.center_y + (self.param_dict['target_dist']/self.param_dict['discrete_size'])
-            self.target_px.append(target_x)
-            self.target_px.append(target_y)
-            # 目標座標を生成(m): 縦x, 横y(ロボット座標系に合わせる)
-            self.target_point.x = (robot_x - target_y)*self.param_dict['discrete_size']
-            self.target_point.y = (robot_y - target_x)*self.param_dict['discrete_size']
-            # パブリッシュ
-            self.pub.publish(self.target_point)
-            # グラフに描画
+            self.generate_target()
             self.plot_target_point()
             self.plot_person_point()
         cv2.imshow('follow_me', self.laser_img)
