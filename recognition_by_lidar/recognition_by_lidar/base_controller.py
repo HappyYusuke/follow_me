@@ -22,19 +22,22 @@ class BaseController(Node):
                 parameters=[
                     ('tolerance', Parameter.Type.DOUBLE),
                     ('i_range', Parameter.Type.DOUBLE),
-                    ('kp', Parameter.Type.DOUBLE),
-                    ('ki', Parameter.Type.DOUBLE),
-                    ('kd', Parameter.Type.DOUBLE)])
+                    ('lkp', Parameter.Type.DOUBLE),
+                    ('akp', Parameter.Type.DOUBLE),
+                    ('aki', Parameter.Type.DOUBLE),
+                    ('akd', Parameter.Type.DOUBLE)])
         self.add_on_set_parameters_callback(self.param_callback)
         # Get parameters
         self.tolerance = self.get_parameter('tolerance').value
         self.i_range = self.get_parameter('i_range').value
-        self.kp = self.get_parameter('kp').value
-        self.ki = self.get_parameter('ki').value
-        self.kd = self.get_parameter('kd').value
+        self.lkp = self.get_parameter('lkp').value
+        self.akp = self.get_parameter('akp').value
+        self.aki = self.get_parameter('aki').value
+        self.akd = self.get_parameter('akd').value
         # Value
         self.twist = Twist()
         self.angle = 0.0
+        self.distance = 0.0
         self.delta_t = 0.0
         self.robot_angular_vel = 0.0
         # Output
@@ -43,9 +46,10 @@ class BaseController(Node):
     def output_screen(self):
         self.get_logger().info(f"tolerance: {self.tolerance}")
         self.get_logger().info(f"i_range: {self.i_range}")
-        self.get_logger().info(f"kp: {self.kp}")
-        self.get_logger().info(f"ki: {self.ki}")
-        self.get_logger().info(f"kd: {self.kd}")
+        self.get_logger().info(f"lkp: {self.lkp}")
+        self.get_logger().info(f"akp: {self.akp}")
+        self.get_logger().info(f"aki: {self.aki}")
+        self.get_logger().info(f"akd: {self.akd}")
 
     def param_callback(self, params):
         for param in params:
@@ -65,7 +69,11 @@ class BaseController(Node):
     def point_to_angle(self, point):
         return math.degrees(math.atan2(point.y, point.x))
 
+    def point_to_distance(self, point):
+        return math.sqrt(point.x**2 + point.y**2)
+
     def callback(self, receive_msg):
+        self.distance = self.point_to_distance(receive_msg)
         self.angle = self.point_to_angle(receive_msg)
 
     def odom_callback(self, receive_msg):
@@ -73,11 +81,11 @@ class BaseController(Node):
 
     # 比例制御量計算
     def p_control(self):
-        return self.kp*self.angle
+        return self.akp*self.angle
 
     # 微分制御量計算
     def d_control(self, p_term):
-        return self.kd*(p_term - self.robot_angular_vel)
+        return self.akd*(p_term - self.robot_angular_vel)
 
     # 積分制御量計算
     def i_control(self, p_term, d_term):
@@ -85,7 +93,7 @@ class BaseController(Node):
         diff = (p_term + d_term) - self.robot_angular_vel
 
         if not diff < self.tolerance and diff < self.i_range:
-            value = self.ki*self.angle*self.delta_t
+            value = self.aki*self.angle*self.delta_t
 
         return value
 
@@ -94,6 +102,7 @@ class BaseController(Node):
         d_term = self.d_control(p_term)
         i_term = self.i_control(p_term, d_term)
 
+        self.twist.linear.x = self.lkp*self.distance
         self.twist.angular.z = -1*(p_term + i_term + d_term)
         self.pub.publish(self.twist)
 
