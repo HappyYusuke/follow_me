@@ -22,6 +22,8 @@ class BaseController(Node):
                 parameters=[
                     ('tolerance', Parameter.Type.DOUBLE),
                     ('i_range', Parameter.Type.DOUBLE),
+                    ('target_width', Parameter.Type.DOUBLE),
+                    ('target_height', Parameter.Type.DOUBLE),
                     ('lkp', Parameter.Type.DOUBLE),
                     ('akp', Parameter.Type.DOUBLE),
                     ('aki', Parameter.Type.DOUBLE),
@@ -30,14 +32,18 @@ class BaseController(Node):
         # Get parameters
         self.tolerance = self.get_parameter('tolerance').value
         self.i_range = self.get_parameter('i_range').value
+        self.target_width = self.get_parameter('target_width').value
+        self.target_height = self.get_parameter('target_height').value
         self.lkp = self.get_parameter('lkp').value
         self.akp = self.get_parameter('akp').value
         self.aki = self.get_parameter('aki').value
         self.akd = self.get_parameter('akd').value
         # Value
         self.twist = Twist()
-        self.angle = 0.0
-        self.distance = 0.0
+        self.target_angle = 0.0
+        self.target_distance = 0.0
+        self.target_x = 0.0
+        self.target_y = 0.0
         self.delta_t = 0.0
         self.robot_angular_vel = 0.0
         # Output
@@ -46,6 +52,8 @@ class BaseController(Node):
     def output_screen(self):
         self.get_logger().info(f"tolerance: {self.tolerance}")
         self.get_logger().info(f"i_range: {self.i_range}")
+        self.get_logger().info(f"target_width: {self.target_width}")
+        self.get_logger().info(f"target_height: {self.target_height}")
         self.get_logger().info(f"lkp: {self.lkp}")
         self.get_logger().info(f"akp: {self.akp}")
         self.get_logger().info(f"aki: {self.aki}")
@@ -57,12 +65,18 @@ class BaseController(Node):
                 self.tolerance = param.value
             elif param.name == 'i_range':
                 self.i_range = param.value
-            elif param.name == 'kp':
-                self.kp = param.value
-            elif param.name == 'ki':
-                self.ki = param.value
+            elif param.name == 'target_width':
+                self.target_width = param.value
+            elif param.name == 'lkp':
+                self.lkp = param.value
+            elif param.name == 'akp':
+                self.akp = param.value
+            elif param.name == 'aki':
+                self.aki = param.value
+            elif param.name == 'akd':
+                self.akd = param.value
             else:
-                self.kd = param.value
+                self.get_logger().info(f"No param name: {param.name}")
         self.get_logger().info(f"Set param: {param.name} >>> {param.value}")
         return SetParametersResult(successful=True)
 
@@ -73,15 +87,17 @@ class BaseController(Node):
         return math.sqrt(point.x**2 + point.y**2)
 
     def callback(self, receive_msg):
-        self.distance = self.point_to_distance(receive_msg)
-        self.angle = self.point_to_angle(receive_msg)
+        self.target_x = receive_msg.x
+        self.target_y = receive_msg.y
+        self.target_distance = self.point_to_distance(receive_msg)
+        self.target_angle = self.point_to_angle(receive_msg)
 
     def odom_callback(self, receive_msg):
         self.robot_angular_vel = receive_msg.twist.twist.angular.z
 
     # 比例制御量計算
     def p_control(self):
-        return self.akp*self.angle
+        return self.akp*self.target_angle
 
     # 微分制御量計算
     def d_control(self, p_term):
@@ -93,18 +109,25 @@ class BaseController(Node):
         diff = (p_term + d_term) - self.robot_angular_vel
 
         if not diff < self.tolerance and diff < self.i_range:
-            value = self.aki*self.angle*self.delta_t
+            value = self.aki*self.target_angle*self.delta_t
 
         return value
 
     def pid_update(self):
+        # 制御量を計算
         p_term = self.p_control()
         d_term = self.d_control(p_term)
         i_term = self.i_control(p_term, d_term)
 
-        self.twist.linear.x = self.lkp*self.distance
-        self.twist.angular.z = -1*(p_term + i_term + d_term)
-        self.pub.publish(self.twist)
+        linear_vel = self.lkp*self.target_distance
+        angular_vel = -1*(p_term + i_term + d_term)
+        return linear_vel, angular_vel
+
+    def in_range(self):
+        result = False
+        if abs(self.target_x) <= self.target_width:
+            result = True
+        return result
 
     def execute(self, rate=100):
         start_time = time.time()
@@ -113,7 +136,19 @@ class BaseController(Node):
         while rclpy.ok():
             self.delta_t = time.time() - start_time
             rclpy.spin_once(self)
-            self.pid_update()
+
+            # 許容範囲内外を判
+            if self.in_range():
+                linear_vel = 0.0
+                angular_vel = 0.0
+            else:
+                linear_vel, angular_vel = self.pid_update()
+
+            # 制御量をパブリッシュ
+            self.twist.linear.x = linear_vel
+            self.twist.angular.z = angular_vel
+            self.pub.publish(self.twist)
+
             time.sleep(1/rate)
 
 

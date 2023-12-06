@@ -132,6 +132,9 @@ class PersonDetector(Node):
         self.height, self.width, _ = self.laser_img.shape[:3]
         self.plot_robot_point()
         if self.center_x == self.center_y == None:
+            self.target_point.x = 0.0
+            self.target_point.y = 0.0
+            self.pub.publish(self.target_point)
             pass
         else:
             self.generate_target()
