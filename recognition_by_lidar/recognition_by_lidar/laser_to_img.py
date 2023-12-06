@@ -32,36 +32,31 @@ class LaserToImg(Node):
                     ('img_show_flg', Parameter.Type.BOOL)])
         self.add_on_set_parameters_callback(self.param_callback)
         # Get parameters
-        self.discrete_size = self.get_parameter('discrete_size').value
-        self.max_lidar_range = self.get_parameter('max_lidar_range').value
-        self.img_show_flg = self.get_parameter('img_show_flg').value
+        self.param_dict = {}
+        self.param_dict['discrete_size'] = self.get_parameter('discrete_size').value
+        self.param_dict['max_lidar_range'] = self.get_parameter('max_lidar_range').value
+        self.param_dict['img_show_flg'] = self.get_parameter('img_show_flg').value
         # Values
         self.color_list = gradation([0,0,255], [255,0,0], [1, 100], [True,True,True])[0]
         # Output
         self.output_screen()
 
     def output_screen(self):
-        self.get_logger().info(f"discrete_size: {self.discrete_size}")
-        self.get_logger().info(f"max_lidar_range: {self.max_lidar_range}")
-        self.get_logger().info(f"img_show_flg: {self.img_show_flg}")
+        for key, value in self.param_dict.items():
+            self.get_logger().info(f"{key}: {value}")
 
     def param_callback(self, params):
         for param in params:
-            if param.name == 'discrete_size':
-                self.discrete_size = param.value
-            elif param.name == 'max_lidar_range':
-                self.max_lidar_range = param.value
-            else:
-                self.img_show_flg = param.value
-        self.get_logger().info(f"Set param: {param.name} >>> {param.value}")
+            self.param_dict[param.name] = param.value
+            self.get_logger().info(f"Set param: {param.name} >>> {param.value}")
         return SetParametersResult(successful=True)
 
     def cloud_to_img_callback(self, scan):
         
         # discrete_factor
-        discrete_factor = 1/self.discrete_size
+        discrete_factor = 1/self.param_dict['discrete_size']
         # max_lidar_rangeとdiscrete_factorを使って画像サイズを設定する
-        img_size = int(self.max_lidar_range*2*discrete_factor)
+        img_size = int(self.param_dict['max_lidar_range']*2*discrete_factor)
 
         # LiDARデータ
         maxAngle = scan.angle_max
@@ -81,7 +76,7 @@ class LaserToImg(Node):
         # rangesの距離・角度からすべての点をXYに変換する処理
         for i in range(num_pts):
             # 範囲内かを判定
-            if (ranges[i] > self.max_lidar_range) or (math.isnan(ranges[i])):
+            if (ranges[i] > self.param_dict['max_lidar_range']) or (math.isnan(ranges[i])):
                 pass
             else:
                 # 角度とXY座標の算出処理
@@ -93,9 +88,9 @@ class LaserToImg(Node):
         for i in range(num_pts):
             pt_x = xy_scan[i, 0]
             pt_y = xy_scan[i, 1]
-            if (pt_x < self.max_lidar_range) or (pt_x > -1*(self.max_lidar_range-self.discrete_size)) or (pt_y < self.max_lidar_range) or (pt_y > -1 * (self.max_lidar_range-self.discrete_size)):
-                pix_x = int(math.floor((pt_x + self.max_lidar_range) * discrete_factor))
-                pix_y = int(math.floor((self.max_lidar_range - pt_y) * discrete_factor))
+            if (pt_x < self.param_dict['max_lidar_range']) or (pt_x > -1*(self.param_dict['max_lidar_range']-self.param_dict['discrete_size'])) or (pt_y < self.param_dict['max_lidar_range']) or (pt_y > -1 * (self.param_dict['max_lidar_range']-self.param_dict['discrete_size'])):
+                pix_x = int(math.floor((pt_x + self.param_dict['max_lidar_range']) * discrete_factor))
+                pix_y = int(math.floor((self.param_dict['max_lidar_range'] - pt_y) * discrete_factor))
                 if (pix_x > img_size) or (pix_y > img_size):
                     print("Error")
                 else:
@@ -106,7 +101,7 @@ class LaserToImg(Node):
         self.pub.publish(img)
 
         # 画像の表示処理. imgshow_flgがTrueの場合のみ表示する
-        if self.img_show_flg:
+        if self.param_dict['img_show_flg']:
             cv2.imshow('laser_img', blank_img)
             cv2.waitKey(3)
             #更新のため一旦消す

@@ -30,14 +30,15 @@ class BaseController(Node):
                     ('akd', Parameter.Type.DOUBLE)])
         self.add_on_set_parameters_callback(self.param_callback)
         # Get parameters
-        self.tolerance = self.get_parameter('tolerance').value
-        self.i_range = self.get_parameter('i_range').value
-        self.target_width = self.get_parameter('target_width').value
-        self.target_height = self.get_parameter('target_height').value
-        self.lkp = self.get_parameter('lkp').value
-        self.akp = self.get_parameter('akp').value
-        self.aki = self.get_parameter('aki').value
-        self.akd = self.get_parameter('akd').value
+        self.param_dict = {}
+        self.param_dict['tolerance'] = self.get_parameter('tolerance').value
+        self.param_dict['i_range'] = self.get_parameter('i_range').value
+        self.param_dict['target_width'] = self.get_parameter('target_width').value
+        self.param_dict['target_height'] = self.get_parameter('target_height').value
+        self.param_dict['lkp'] = self.get_parameter('lkp').value
+        self.param_dict['akp'] = self.get_parameter('akp').value
+        self.param_dict['aki'] = self.get_parameter('aki').value
+        self.param_dict['akd'] = self.get_parameter('akd').value
         # Value
         self.twist = Twist()
         self.target_angle = 0.0
@@ -50,34 +51,13 @@ class BaseController(Node):
         self.output_screen()
 
     def output_screen(self):
-        self.get_logger().info(f"tolerance: {self.tolerance}")
-        self.get_logger().info(f"i_range: {self.i_range}")
-        self.get_logger().info(f"target_width: {self.target_width}")
-        self.get_logger().info(f"target_height: {self.target_height}")
-        self.get_logger().info(f"lkp: {self.lkp}")
-        self.get_logger().info(f"akp: {self.akp}")
-        self.get_logger().info(f"aki: {self.aki}")
-        self.get_logger().info(f"akd: {self.akd}")
+        for key, value in self.param_dict.items():
+            self.get_logger().info(f"{key}: {value}")
 
     def param_callback(self, params):
         for param in params:
-            if param.name == 'tolerance':
-                self.tolerance = param.value
-            elif param.name == 'i_range':
-                self.i_range = param.value
-            elif param.name == 'target_width':
-                self.target_width = param.value
-            elif param.name == 'lkp':
-                self.lkp = param.value
-            elif param.name == 'akp':
-                self.akp = param.value
-            elif param.name == 'aki':
-                self.aki = param.value
-            elif param.name == 'akd':
-                self.akd = param.value
-            else:
-                self.get_logger().info(f"No param name: {param.name}")
-        self.get_logger().info(f"Set param: {param.name} >>> {param.value}")
+            self.param_dict[param.name] = param.value
+            self.get_logger().info(f"Set param: {param.name} >>> {param.value}")
         return SetParametersResult(successful=True)
 
     def point_to_angle(self, point):
@@ -97,19 +77,19 @@ class BaseController(Node):
 
     # 比例制御量計算
     def p_control(self):
-        return self.akp*self.target_angle
+        return self.param_dict['akp']*self.target_angle
 
     # 微分制御量計算
     def d_control(self, p_term):
-        return self.akd*(p_term - self.robot_angular_vel)
+        return self.param_dict['akd']*(p_term - self.robot_angular_vel)
 
     # 積分制御量計算
     def i_control(self, p_term, d_term):
         value = 0.0
         diff = (p_term + d_term) - self.robot_angular_vel
 
-        if not diff < self.tolerance and diff < self.i_range:
-            value = self.aki*self.target_angle*self.delta_t
+        if not diff < self.param_dict['tolerance'] and diff < self.param_dict['i_range']:
+            value = self.param_dict['aki']*self.target_angle*self.delta_t
 
         return value
 
@@ -119,13 +99,13 @@ class BaseController(Node):
         d_term = self.d_control(p_term)
         i_term = self.i_control(p_term, d_term)
 
-        linear_vel = self.lkp*self.target_distance
+        linear_vel = self.param_dict['lkp']*self.target_distance
         angular_vel = -1*(p_term + i_term + d_term)
         return linear_vel, angular_vel
 
     def in_range(self):
         result = False
-        if abs(self.target_x) <= self.target_width:
+        if abs(self.target_x) <= self.param_dict['target_width']:
             result = True
         return result
 

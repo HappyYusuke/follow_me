@@ -32,9 +32,9 @@ class PersonDetector(Node):
                     ('target_dist', Parameter.Type.DOUBLE)])
         self.add_on_set_parameters_callback(self.param_callback)
         # Get parameters
-        self.other_param = 'discrete_size'  # laser_to_imgからもってくる
-        self.target_dist = self.get_parameter('target_dist').value
-        self.discrete_size = self.get_param()
+        self.param_dict ={}
+        self.param_dict['target_dist'] = self.get_parameter('target_dist').value
+        self.param_dict['discrete_size'] = self.get_param()  # laser_to_imgからもってくる
         # Value
         self.center_x = 0.0
         self.center_y = 0.0
@@ -47,25 +47,24 @@ class PersonDetector(Node):
         self.output_screen()
 
     def output_screen(self):
-        self.get_logger().info(f"target_dist: {self.target_dist}")
-        self.get_logger().info(f"discrete_size: {self.discrete_size}")
+        for key, value in self.param_dict.items():
+            self.get_logger().info(f"{key}: {value}")
 
     def param_event_callback(self, receive_msg):
         for data in receive_msg.changed_parameters:
-            if data.name == 'discrete_size':
-                self.discrete_size = data.value.double_value
-                self.get_logger().info(f"Param event: {data.name} >>> {self.discrete_size}")
+            if data.name == discrete_size:
+                self.param_dict['discrete_size'] = data.value.double_value
+                self.get_logger().info(f"Param event: {data.name} >>> {self.param_dict['discrete_size']}")
 
     def param_callback(self, params):
         for param in params:
-            if param.name == 'target_dist':
-                self.target_dist = param.value
-        self.get_logger().info(f"Set param: {param.name} >>> {param.value}")
+            self.param_dict[param.name] = param.value
+            self.get_logger().info(f"Set param: {param.name} >>> {param.value}")
         return SetParametersResult(successful=True)
     
     def get_param(self):
         req = GetParameters.Request()
-        req.names = [self.other_param]
+        req.names = ['discrete_size']
         future = self.srv_client.call_async(req)
         while rclpy.ok():
             rclpy.spin_once(self, timeout_sec=0.1)
@@ -118,12 +117,12 @@ class PersonDetector(Node):
         robot_y = self.width / 2
         # 目標座標を生成(px): 横x, 縦y
         target_x = self.center_x
-        target_y = self.center_y + (self.target_dist/self.discrete_size)
+        target_y = self.center_y + (self.param_dict['target_dist']/self.param_dict['discrete_size'])
         self.target_px.append(target_x)
         self.target_px.append(target_y)
         # 目標座標を生成(m): 縦x, 横y(ロボット座標系に合わせる)
-        self.target_point.x = (robot_x - target_y)*self.discrete_size
-        self.target_point.y = (robot_y - target_x)*self.discrete_size
+        self.target_point.x = (robot_x - target_y)*self.param_dict['discrete_size']
+        self.target_point.y = (robot_y - target_x)*self.param_dict['discrete_size']
         # パブリッシュ
         self.pub.publish(self.target_point)
 
