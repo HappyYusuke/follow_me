@@ -142,11 +142,13 @@ class PersonDetector(Node):
             data_list = [[self.diff_distance(data[0]), data[1], data[2]] for data in data_list]
             # 追従対象が消失して他のpersonに引っ張られたらresult=False
             if data_list[0] is None:
-                result = None
+                return None
             else:
-                result = min(data_list)
+                try:
+                    result = min(data_list)
+                except TypeError:
+                    return None
                 # 計算のために距離を保存
-                self.before_data = result
         self.before_data = result
         return result
 
@@ -159,11 +161,17 @@ class PersonDetector(Node):
         if self.param_dict['none_person_flg']:
             time.sleep(self.param_dict['init_time'])
             target_person = self.select_target(robot_x, robot_y)
+            result_point = target_person[1]
+            self.center_x = target_person[2][0]
+            self.center_y = target_person[2][1]
+        else:
+            target_person = self.select_target(robot_x, robot_y)
             if target_person is None:
                 return False
             result_point = target_person[1]
             self.center_x = target_person[2][0]
             self.center_y = target_person[2][1]
+            
         return result_point
         
 
@@ -178,6 +186,8 @@ class PersonDetector(Node):
             self.pub.publish(self.target_point)
             pass
         else:
+            robot_x = self.height / 2
+            robot_y = self.width / 2
             # 目標座標を生成(px): 横x, 縦y
             target_x = self.center_x
             target_y = self.center_y + (self.param_dict['target_dist']/self.param_dict['discrete_size'])
