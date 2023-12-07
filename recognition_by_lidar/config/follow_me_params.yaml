@@ -11,12 +11,13 @@
   ros__parameters:
     # 追従対象者との距離
     target_dist: 0.5
+    # 追従対象を見失ったときに追従を再開する時の距離の誤差
+    target_diff: 0.3
     # 起動時に追従対象者を検出するまでの待機時間
-    init_time: 3.0
+    init_time: 0.1
     # 起動時に追従対象を検出するまでのflg
     none_person_flg: True
-    # 追従対象を見失ったときに追従を再開する時の距離の誤差
-    target_diff: 0.5
+    
   
 /follow_me/base_controller:
   ros__parameters:

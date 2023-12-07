@@ -45,7 +45,7 @@ class PersonDetector(Node):
         self.param_dict['discrete_size'] = self.get_param()  # laser_to_imgからもってくる
         # Value
         self.person_list = []
-        self.before_data = []
+        self.before_data = [0.0, 0.0, 0.0]
         self.center_x = 0.0
         self.center_y = 0.0
         self.target_point = Point()
@@ -119,10 +119,7 @@ class PersonDetector(Node):
                    thickness = 2)
 
     def diff_distance(self, data):
-        diff = abs(data - self.before_data[0])
-        if diff >= self.param_dict['target_diff']:
-            diff = None
-        return diff
+        return abs(data - self.before_data[0])
 
     def select_target(self, robot_px_x, robot_px_y):
         # personまでの距離と座標のリストを作成
@@ -133,24 +130,13 @@ class PersonDetector(Node):
             person_point.y = (robot_px_y - person_px.x)*self.param_dict['discrete_size']
             distance = math.sqrt(person_point.x**2 + person_point.y**2)
             data_list.append([distance, person_point, [person_px.x, person_px.y]])
-        # 起動時に最も近い人物を追従対象とする
-        if self.param_dict['none_person_flg']:
-            result = min(data_list)
-            self.param_dict['none_person_flg'] = False
-        else:
-            # 距離に誤差が少ないpersonを追従対象とする
-            data_list = [[self.diff_distance(data[0]), data[1], data[2]] for data in data_list]
-            # 追従対象が消失して他のpersonに引っ張られたらresult=False
-            if data_list[0] is None:
-                return None
-            else:
-                try:
-                    result = min(data_list)
-                except TypeError:
-                    return None
-                # 計算のために距離を保存
-        self.before_data = result
-        return result
+        # 0番目に1時刻前の追従対象との距離の誤差を格納する
+        data_list = [[self.diff_distance(data[0]), data[1], data[2]] for data in data_list]
+        # 距離に誤差が少ないpersonを追従対象とする
+        target = min(data_list)
+        # 計算のために距離を保存
+        self.before_data = target
+        return target
 
     def generate_target(self):
         self.target_px.clear()
@@ -158,19 +144,10 @@ class PersonDetector(Node):
         robot_x = self.height / 2
         robot_y = self.width / 2
         # 追従目標を選定
-        if self.param_dict['none_person_flg']:
-            time.sleep(self.param_dict['init_time'])
-            target_person = self.select_target(robot_x, robot_y)
-            result_point = target_person[1]
-            self.center_x = target_person[2][0]
-            self.center_y = target_person[2][1]
-        else:
-            target_person = self.select_target(robot_x, robot_y)
-            if target_person is None:
-                return False
-            result_point = target_person[1]
-            self.center_x = target_person[2][0]
-            self.center_y = target_person[2][1]
+        target_person = self.select_target(robot_x, robot_y)
+        result_point = target_person[1]
+        self.center_x = target_person[2][0]
+        self.center_y = target_person[2][1]
             
         return result_point
         
@@ -178,13 +155,15 @@ class PersonDetector(Node):
     def img_show(self, receive_msg):
         self.laser_img = self.bridge.imgmsg_to_cv2(receive_msg, desired_encoding='bgr8')
         self.height, self.width, _ = self.laser_img.shape[:3]
+        # ロボットの座標をプロット
         self.plot_robot_point()
+        # 追従対象を生成
         target_point = self.generate_target()
-        if target_point:
+        # 追従対象がいなければロボット台車を停止する
+        if not target_point:
             self.target_point.x = 0.0
             self.target_point.y = 0.0
             self.pub.publish(self.target_point)
-            pass
         else:
             robot_x = self.height / 2
             robot_y = self.width / 2
