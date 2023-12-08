@@ -148,7 +148,6 @@ class PersonDetector(Node):
         result_point = target_person[1]
         self.center_x = target_person[2][0]
         self.center_y = target_person[2][1]
-            
         return result_point
         
 
@@ -157,29 +156,31 @@ class PersonDetector(Node):
         self.height, self.width, _ = self.laser_img.shape[:3]
         # ロボットの座標をプロット
         self.plot_robot_point()
-        # 追従対象を生成
-        target_point = self.generate_target()
-        # 追従対象がいなければロボット台車を停止する
-        if not target_point:
-            self.target_point.x = 0.0
-            self.target_point.y = 0.0
-            self.pub.publish(self.target_point)
-        else:
-            robot_x = self.height / 2
-            robot_y = self.width / 2
-            # 目標座標を生成(px): 横x, 縦y
-            target_x = self.center_x
-            target_y = self.center_y + (self.param_dict['target_dist']/self.param_dict['discrete_size'])
-            self.target_px.append(target_x)
-            self.target_px.append(target_y)
-            # 目標座標を生成(m): 縦x, 横y(ロボット座標系に合わせる)
-            self.target_point.x = (robot_x - target_y)*self.param_dict['discrete_size']
-            self.target_point.y = (robot_y - target_x)*self.param_dict['discrete_size']
-            # パブリッシュ
-            self.pub.publish(self.target_point)
-            # グラフに描画
-            self.plot_target_point()
-            self.plot_person_point()
+        # personがいるか判定
+        if self.person_list:
+            # 追従対象を生成
+            target_point = self.generate_target()
+            # 追従対象がいなければロボット台車を停止する
+            if not target_point:
+                self.target_point.x = 0.0
+                self.target_point.y = 0.0
+                self.pub.publish(self.target_point)
+            else:
+                robot_x = self.height / 2
+                robot_y = self.width / 2
+                # 目標座標を生成(px): 横x, 縦y
+                target_x = self.center_x
+                target_y = self.center_y + (self.param_dict['target_dist']/self.param_dict['discrete_size'])
+                self.target_px.append(target_x)
+                self.target_px.append(target_y)
+                # 目標座標を生成(m): 縦x, 横y(ロボット座標系に合わせる)
+                self.target_point.x = (robot_x - target_y)*self.param_dict['discrete_size']
+                self.target_point.y = (robot_y - target_x)*self.param_dict['discrete_size']
+                # パブリッシュ
+                self.pub.publish(self.target_point)
+                # グラフに描画
+                self.plot_target_point()
+                self.plot_person_point()
         cv2.imshow('follow_me', self.laser_img)
         cv2.waitKey(1)
 
