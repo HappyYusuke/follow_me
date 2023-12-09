@@ -13,6 +13,7 @@ class BaseController(Node):
         super().__init__('base_controller')
         # Publisher
         self.pub = self.create_publisher(Twist, '/cmd_vel', 10)
+        self.data_pub = self.create_publisher(Point, '/follow_me/distance_angle_data', 10)
         # Subscriber
         self.create_subscription(Point, '/follow_me/target_point', self.callback, 10)
         self.create_subscription(Odometry, '/odom', self.odom_callback, 10)
@@ -135,6 +136,12 @@ class BaseController(Node):
             self.twist.linear.x = linear_vel
             self.twist.angular.z = angular_vel
             self.pub.publish(self.twist)
+
+            # 実験用に目標までの距離と角度をパブリッシュ
+            data = Point()
+            data.x = self.target_distance
+            data.z = self.target_angle
+            self.data_pub.publish(data)
 
             time.sleep(1/rate)
 
