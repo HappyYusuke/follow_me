@@ -64,7 +64,10 @@ class BaseController(Node):
         return math.degrees(math.atan2(point.y, point.x))
 
     def point_to_distance(self, point):
-        return math.sqrt(point.x**2 + point.y**2)
+        distance = math.sqrt(point.x**2 + point.y**2)
+        if point.x < 0:
+            distance *= -1
+        return distance
 
     def callback(self, receive_msg):
         self.target_x = receive_msg.x
