@@ -65,7 +65,7 @@ class BaseController(Node):
 
     def point_to_distance(self, point):
         distance = math.sqrt(point.x**2 + point.y**2)
-        if point.x < 0:
+        if point.x < 0.0:
             distance *= -1
         return distance
 
@@ -104,6 +104,10 @@ class BaseController(Node):
 
         linear_vel = self.param_dict['lkp']*self.target_distance
         angular_vel = -1*(p_term + i_term + d_term)
+
+        if linear_vel < 0.0:
+            angular_vel = 0.0
+
         return linear_vel, angular_vel
 
     def in_range(self):
