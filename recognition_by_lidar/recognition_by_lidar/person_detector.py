@@ -34,7 +34,8 @@ class PersonDetector(Node):
                     ('target_dist', Parameter.Type.DOUBLE),
                     ('init_time', Parameter.Type.DOUBLE),
                     ('none_person_flg', Parameter.Type.BOOL),
-                    ('target_diff', Parameter.Type.DOUBLE)])
+                    ('target_diff', Parameter.Type.DOUBLE),
+                    ('target_radius', Parameter.Type.DOUBLE)])
         self.add_on_set_parameters_callback(self.param_callback)
         # Get parameters
         self.param_dict ={}
@@ -42,6 +43,7 @@ class PersonDetector(Node):
         self.param_dict['init_time'] = self.get_parameter('init_time').value
         self.param_dict['none_person_flg'] = self.get_parameter('none_person_flg').value
         self.param_dict['target_diff'] = self.get_parameter('target_diff').value
+        self.param_dict['target_radius'] = self.get_parameter('target_radius').value
         self.param_dict['discrete_size'] = self.get_param()  # laser_to_imgからもってくる
         # Value
         self.person_list = []
@@ -114,7 +116,7 @@ class PersonDetector(Node):
     def plot_target_point(self):
         cv2.circle(img = self.laser_img,
                    center = (round(self.target_px[0]), round(self.target_px[1])),
-                   radius = 10,
+                   radius = self.param_dict['target_radius'],
                    color = (255, 0, 0),
                    thickness = 2)
 
@@ -149,7 +151,7 @@ class PersonDetector(Node):
         self.center_x = target_person[2][0]
         self.center_y = target_person[2][1]
         return result_point
-        
+
 
     def img_show(self, receive_msg):
         self.laser_img = self.bridge.imgmsg_to_cv2(receive_msg, desired_encoding='bgr8')

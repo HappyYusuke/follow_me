@@ -3,7 +3,8 @@ import math
 import rclpy
 from rclpy.node import Node
 from rclpy.parameter import Parameter
-from rcl_interfaces.msg import SetParametersResult
+from rcl_interfaces.msg import SetParametersResult, ParameterEvent
+from rcl_interfaces.srv import GetParameters
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist, Point
 
@@ -17,6 +18,10 @@ class BaseController(Node):
         # Subscriber
         self.create_subscription(Point, '/follow_me/target_point', self.callback, 10)
         self.create_subscription(Odometry, '/odom', self.odom_callback, 10)
+        # Service
+        self.srv_client = self.create_client(GetParameters, '/follow_me/person_detector/get_parameters')
+        while not self.srv_client.wait_for_service(timeout_sec=0.5):
+            self.get_logger().info('/follow_me/laser_to_img server is not available ...')
         # Parameters
         self.declare_parameters(
                 namespace='',
@@ -40,6 +45,7 @@ class BaseController(Node):
         self.param_dict['akp'] = self.get_parameter('akp').value
         self.param_dict['aki'] = self.get_parameter('aki').value
         self.param_dict['akd'] = self.get_parameter('akd').value
+        self.param_dict['target_radius'] = self.get_param()  # person_detectorからもってくる
         # Value
         self.twist = Twist()
         self.target_angle = 0.0
@@ -55,11 +61,27 @@ class BaseController(Node):
         for key, value in self.param_dict.items():
             self.get_logger().info(f"{key}: {value}")
 
+    def param_event_callback(self, receive_msg):
+        for data in receive_msg.changed_parameters:
+            if data.name == 'target_radius':
+                self.param_dict['target_radius'] = data.value.double_value
+                self.get_logger().info(f"Param event: {data.name} >>> {self.param_dict['target_radius']}")
+
     def param_callback(self, params):
         for param in params:
             self.param_dict[param.name] = param.value
             self.get_logger().info(f"Set param: {param.name} >>> {param.value}")
         return SetParametersResult(successful=True)
+
+    def get_param(self):
+        req = GetParameters.Request()
+        req.names = ['target_radius']
+        future = self.srv_client.call_async(req)
+        while rclpy.ok():
+            rclpy.spin_once(self, timeout_sec=0.1)
+            if future.done():
+                break
+        return future.result().values[0].double_value
 
     def point_to_angle(self, point):
         return math.degrees(math.atan2(point.y, point.x))

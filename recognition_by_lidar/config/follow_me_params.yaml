@@ -13,11 +13,12 @@
     target_dist: 0.5
     # 追従対象を見失ったときに追従を再開する時の距離の誤差
     target_diff: 0.3
+    # 追従ポイント（制御を止める領域）の半径
+    target_radius: 0.1
     # 起動時に追従対象者を検出するまでの待機時間
     init_time: 0.1
     # 起動時に追従対象を検出するまでのflg
     none_person_flg: True
-    
   
 /follow_me/base_controller:
   ros__parameters:
@@ -26,10 +27,10 @@
     # 積分制御をし始める視野角[°]
     i_range: 3.0
     # 目標座標周りの範囲
-    target_width: 0.1
+    target_width: 0.0
     target_height: 0.1
     # 並進のPゲイン==========================
-    lkp: 0.3
+    lkp: 0.0
     # 旋回のPIDゲイン========================
     # Pゲイン
     akp: 0.005
