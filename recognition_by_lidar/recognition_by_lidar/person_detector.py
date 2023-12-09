@@ -62,7 +62,7 @@ class PersonDetector(Node):
 
     def param_event_callback(self, receive_msg):
         for data in receive_msg.changed_parameters:
-            if data.name == discrete_size:
+            if data.name == 'discrete_size':
                 self.param_dict['discrete_size'] = data.value.double_value
                 self.get_logger().info(f"Param event: {data.name} >>> {self.param_dict['discrete_size']}")
 
