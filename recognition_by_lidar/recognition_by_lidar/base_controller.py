@@ -134,7 +134,6 @@ class BaseController(Node):
         result = False
         if abs(self.target_distance) <= self.param_dict['target_radius']:
             result = True
-        self.get_logger().info(f"{result}")
         return result
 
     def execute(self, rate=100):
