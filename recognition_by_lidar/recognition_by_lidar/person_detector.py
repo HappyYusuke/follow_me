@@ -116,7 +116,7 @@ class PersonDetector(Node):
     def plot_target_point(self):
         cv2.circle(img = self.laser_img,
                    center = (round(self.target_px[0]), round(self.target_px[1])),
-                   radius = self.param_dict['target_radius'],
+                   radius = round(self.param_dict['target_radius']/self.param_dict['discrete_size']),
                    color = (255, 0, 0),
                    thickness = 2)
 

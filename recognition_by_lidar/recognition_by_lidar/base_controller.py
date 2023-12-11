@@ -18,6 +18,7 @@ class BaseController(Node):
         # Subscriber
         self.create_subscription(Point, '/follow_me/target_point', self.callback, 10)
         self.create_subscription(Odometry, '/odom', self.odom_callback, 10)
+        self.create_subscription(ParameterEvent, '/parameter_events', self.param_event_callback, 10)
         # Service
         self.srv_client = self.create_client(GetParameters, '/follow_me/person_detector/get_parameters')
         while not self.srv_client.wait_for_service(timeout_sec=0.5):
@@ -28,8 +29,6 @@ class BaseController(Node):
                 parameters=[
                     ('tolerance', Parameter.Type.DOUBLE),
                     ('i_range', Parameter.Type.DOUBLE),
-                    ('target_width', Parameter.Type.DOUBLE),
-                    ('target_height', Parameter.Type.DOUBLE),
                     ('lkp', Parameter.Type.DOUBLE),
                     ('akp', Parameter.Type.DOUBLE),
                     ('aki', Parameter.Type.DOUBLE),
@@ -39,8 +38,6 @@ class BaseController(Node):
         self.param_dict = {}
         self.param_dict['tolerance'] = self.get_parameter('tolerance').value
         self.param_dict['i_range'] = self.get_parameter('i_range').value
-        self.param_dict['target_width'] = self.get_parameter('target_width').value
-        self.param_dict['target_height'] = self.get_parameter('target_height').value
         self.param_dict['lkp'] = self.get_parameter('lkp').value
         self.param_dict['akp'] = self.get_parameter('akp').value
         self.param_dict['aki'] = self.get_parameter('aki').value
@@ -89,7 +86,7 @@ class BaseController(Node):
     def point_to_distance(self, point):
         distance = math.sqrt(point.x**2 + point.y**2)
         if point.x < 0.0:
-            distance *= -1
+            distance = -distance
         return distance
 
     def callback(self, receive_msg):
@@ -135,8 +132,9 @@ class BaseController(Node):
 
     def in_range(self):
         result = False
-        if abs(self.target_x) <= self.param_dict['target_width']:
+        if abs(self.target_distance) <= self.param_dict['target_radius']:
             result = True
+        self.get_logger().info(f"{result}")
         return result
 
     def execute(self, rate=100):
