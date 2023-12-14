@@ -18,7 +18,8 @@ class PersonDetector(Node):
         # OpenCV Bridge
         self.bridge = CvBridge()
         # Publisher
-        self.pub = self.create_publisher(Point, '/follow_me/target_point', 10)
+        self.point_pub = self.create_publisher(Point, '/follow_me/target_point', 10)
+        self.img_pub = self.create_publisher(Image, '/follow_me/image', 10)
         # Subscriber
         self.create_subscription(DetectionArray, '/yolo/detections', self.yolo_callback, 10)
         self.create_subscription(Image, '/yolo/dbg_image', self.img_show, 10)
@@ -203,7 +204,7 @@ class PersonDetector(Node):
             if not target_point:
                 self.target_point.x = 0.0
                 self.target_point.y = 0.0
-                self.pub.publish(self.target_point)
+                self.point_pub.publish(self.target_point)
             else:
                 robot_x = self.height / 2
                 robot_y = self.width / 2
@@ -216,11 +217,16 @@ class PersonDetector(Node):
                 self.target_point.x = (robot_x - target_y)*self.param_dict['discrete_size']
                 self.target_point.y = (robot_y - target_x)*self.param_dict['discrete_size']
                 # パブリッシュ
-                self.pub.publish(self.target_point)
+                self.point_pub.publish(self.target_point)
                 # グラフに描画
                 self.plot_target_point()
                 self.plot_person_point()
-                
+
+        # ros2 bag 用にトピックとして画像を配布
+        img = self.bridge.cv2_to_imgmsg(self.laser_img, encoding="bgr8")
+        self.img_pub.publish(img)
+
+        # 画像を表示
         cv2.imshow('follow_me', self.laser_img)
         cv2.waitKey(1)
 
