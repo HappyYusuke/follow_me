@@ -15,8 +15,10 @@
     target_diff: 0.3
     # 追従ポイント（制御を止める領域）の半径
     target_radius: 0.1
+    # 人を検出する範囲(円)の半径
+    target_range: 0.4
     # 起動時に追従対象者を検出するまでの待機時間
-    init_time: 0.1
+    init_time: 3.0
     # 起動時に追従対象を検出するまでのflg
     none_person_flg: True
   

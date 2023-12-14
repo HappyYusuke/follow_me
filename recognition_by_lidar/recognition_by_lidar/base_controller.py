@@ -126,6 +126,7 @@ class BaseController(Node):
         angular_vel = -1*(p_term + i_term + d_term)
 
         if linear_vel < 0.0:
+            linear_vel = 0.0
             angular_vel = 0.0
 
         return linear_vel, angular_vel

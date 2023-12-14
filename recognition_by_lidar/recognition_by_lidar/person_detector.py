@@ -35,7 +35,8 @@ class PersonDetector(Node):
                     ('init_time', Parameter.Type.DOUBLE),
                     ('none_person_flg', Parameter.Type.BOOL),
                     ('target_diff', Parameter.Type.DOUBLE),
-                    ('target_radius', Parameter.Type.DOUBLE)])
+                    ('target_radius', Parameter.Type.DOUBLE),
+                    ('target_range', Parameter.Type.DOUBLE)])
         self.add_on_set_parameters_callback(self.param_callback)
         # Get parameters
         self.param_dict ={}
@@ -44,9 +45,11 @@ class PersonDetector(Node):
         self.param_dict['none_person_flg'] = self.get_parameter('none_person_flg').value
         self.param_dict['target_diff'] = self.get_parameter('target_diff').value
         self.param_dict['target_radius'] = self.get_parameter('target_radius').value
+        self.param_dict['target_range'] = self.get_parameter('target_range').value
         self.param_dict['discrete_size'] = self.get_param()  # laser_to_imgからもってくる
         # Value
         self.person_list = []
+        self.target_data = []  # 追従対象のデータを保存するリスト
         self.before_data = [0.0, 0.0, 0.0]
         self.center_x = 0.0
         self.center_y = 0.0
@@ -115,29 +118,57 @@ class PersonDetector(Node):
 
     def plot_target_point(self):
         cv2.circle(img = self.laser_img,
-                   center = (round(self.target_px[0]), round(self.target_px[1])),
-                   radius = round(self.param_dict['target_radius']/self.param_dict['discrete_size']),
+                   center = (int(self.target_px[0]), int(self.target_px[1])),
+                   radius = int(self.param_dict['target_radius']/self.param_dict['discrete_size']),
                    color = (255, 0, 0),
+                   thickness = 2)
+
+    def plot_target_range(self):
+        cv2.circle(img = self.laser_img,
+                   center = (int(self.before_data[2][0]), int(self.before_data[2][1])),
+                   radius = int(self.param_dict['target_range']/self.param_dict['discrete_size']),
+                   color = (196, 0, 255),
                    thickness = 2)
 
     def diff_distance(self, data):
         return abs(data - self.before_data[0])
 
+    def euclidean_distance(self, data, before_data):
+        return math.sqrt((data.x-before_data.x)**2 + (data.y-before_data.y)**2)
+
     def select_target(self, robot_px_x, robot_px_y):
         # personまでの距離と座標のリストを作成
-        data_list = []
+        self.target_data.clear()
         for person_px in self.person_list:
             person_point = Point()
             person_point.x = (robot_px_x - person_px.y)*self.param_dict['discrete_size']
             person_point.y = (robot_px_y - person_px.x)*self.param_dict['discrete_size']
             distance = math.sqrt(person_point.x**2 + person_point.y**2)
-            data_list.append([distance, person_point, [person_px.x, person_px.y]])
+            self.target_data.append([distance, person_point, [person_px.x, person_px.y]])
         # 0番目に1時刻前の追従対象との距離の誤差を格納する
-        data_list = [[self.diff_distance(data[0]), data[1], data[2]] for data in data_list]
-        # 距離に誤差が少ないpersonを追従対象とする
-        target = min(data_list)
-        # 計算のために距離を保存
-        self.before_data = target
+        self.target_data = [[self.diff_distance(data[0]), data[1], data[2]] for data in self.target_data]
+        # 検出範囲内のpersonを追従対象とする(起動時だけ一番近い人を追従対象にする)
+        if self.param_dict['none_person_flg']:
+            target = min(self.target_data)
+            param_bool = Parameter('none_person_flg', Parameter.Type.BOOL, False)
+            self.set_parameters([param_bool])
+        else:
+            for data in self.target_data:
+                diff = self.euclidean_distance(data[1], self.before_data[1])
+                if diff <= self.param_dict['target_range']:
+                    target = data
+                    break
+                else:
+                    target = None
+        # targetがNoneだったらself.before_dataを初期化してnone_person_flgをTrueにする
+        if target is None:
+            #self.before_data = [0.0, 0.0, 0.0]
+            #param_bool = Parameter('none_person_flg', Parameter.Type.BOOL, True)
+            #self.set_parameters([param_bool])
+            pass
+        else:
+            # 計算のために距離を保存
+            self.before_data = target
         return target
 
     def generate_target(self):
@@ -147,9 +178,12 @@ class PersonDetector(Node):
         robot_y = self.width / 2
         # 追従目標を選定
         target_person = self.select_target(robot_x, robot_y)
-        result_point = target_person[1]
-        self.center_x = target_person[2][0]
-        self.center_y = target_person[2][1]
+        if not target_person is None:
+            result_point = target_person[1]
+            self.center_x = target_person[2][0]
+            self.center_y = target_person[2][1]
+        else:
+            result_point = False
         return result_point
 
 
@@ -158,6 +192,9 @@ class PersonDetector(Node):
         self.height, self.width, _ = self.laser_img.shape[:3]
         # ロボットの座標をプロット
         self.plot_robot_point()
+        # 追従対象の検出範囲をプロット
+        if not self.param_dict['none_person_flg']:
+            self.plot_target_range()
         # personがいるか判定
         if self.person_list:
             # 追従対象を生成
@@ -183,6 +220,7 @@ class PersonDetector(Node):
                 # グラフに描画
                 self.plot_target_point()
                 self.plot_person_point()
+                
         cv2.imshow('follow_me', self.laser_img)
         cv2.waitKey(1)
 
