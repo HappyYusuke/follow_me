@@ -32,6 +32,7 @@ setup(
             'person_detector = recognition_by_lidar.person_detector :main',
             'laser_imgfile_maker = recognition_by_lidar.laser_imgfile_maker:main',
             'base_controller = recognition_by_lidar.base_controller:main',
+            'topic_to_video = recognition_by_lidar.topic_to_video:main',
         ],
     },
 )

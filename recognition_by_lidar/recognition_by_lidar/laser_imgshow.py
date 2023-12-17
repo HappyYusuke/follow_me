@@ -8,7 +8,7 @@ from cv_bridge import CvBridge, CvBridgeError
 class LaserImgshow(Node):
     def __init__(self):
         super().__init__('laser_imgshow_node')
-        self.sub_img = self.create_subscription(Image, '/follow_me/laser_img', self.show_img, 10)
+        self.sub_img = self.create_subscription(Image, '/follow_me/image', self.show_img, 10)
         self.bridge = CvBridge()
 
     def show_img(self, msg):
