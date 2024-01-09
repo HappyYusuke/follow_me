@@ -6,6 +6,13 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 
 
+# ファイル名
+video_name = 'max_0.6.mp4'
+# 動画ファイルの保存先
+video_path = '/home/yusukepad/Videos/'
+save_path = video_path + video_name
+
+
 class TopicToVideo(Node):
     def __init__(self):
         super().__init__('topic_to_video_node')
@@ -43,7 +50,7 @@ class TopicToVideo(Node):
                 self.get_logger().info(f"{len(self.frames)} frames to video ...")
                 self.get_logger().info(f"{frame_rate} fps")
                 # 動画を作成
-                writer = cv2.VideoWriter('/home/yusuke-desktop/Videos/tmp.mp4', fmt, frame_rate, size)
+                writer = cv2.VideoWriter(save_path, fmt, frame_rate, size)
                 for frame in self.frames:
                     writer.write(frame)
                 writer.release()
