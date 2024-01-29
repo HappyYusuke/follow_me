@@ -7,7 +7,7 @@ from cv_bridge import CvBridge, CvBridgeError
 
 
 # 保存先のパス(末尾に / 入れる)
-dir_path = '/home/yusukepad/follow_me_dataset3/images/'
+dir_path = '/home/demulab/follow_me_images/yolo/'
 # 保存するファイル名(拡張子なしのファイル名)
 file_name = 'laser_img'
 
@@ -15,14 +15,14 @@ file_name = 'laser_img'
 class LaserImgshow(Node):
     def __init__(self):
         super().__init__('laser_imgshow_node')
-        self.sub_img = self.create_subscription(Image, '/laser_img', self.show_img, 10)
+        self.sub_img = self.create_subscription(Image, '/yolo/dbg_image', self.show_img, 10)
         self.bridge = CvBridge()
         # Value
         self.num = 0
         self.file_path = None
 
     def show_img(self, msg):
-        img = self.bridge.imgmsg_to_cv2(msg, desired_encoding='mono8')
+        img = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
         
         # 画像保存処理
         self.file_path = f'{dir_path}{file_name}_{self.num}.jpg'
@@ -31,8 +31,8 @@ class LaserImgshow(Node):
         self.get_logger().info(f"{result}: {self.file_path}")
 
         # 表示処理
-        #cv2.imshow('laser_image', img)
-        #cv2.waitKey(1)
+        cv2.imshow('laser_image', img)
+        cv2.waitKey(1)
 
 
 def main():
