@@ -26,7 +26,7 @@ follow_meは2D-LiDARとYOLOv8を用いた人追従機能を提供するROS2パ�
 で記録することでデータセットの収集を行います。<br>
 本手法では人の両脚部分を1つのpersonクラスとしてアノテーションし、回転処理、モザイク処理、MixUp処理といったデータ拡張を行うことで、
 合計21061枚の画像からデータセットを作成しました。学習モデルの初期重みは、YOLOv8xを用いています。
-本手法で作成した重みファイルが[weights（金沢工業大学が提供するメールアドレスのみアクセス可）](https://kanazawa-it.box.com/s/lfyox8d2pab6dd741z6i4juj9ea9jc32)にあります。<br>
+本手法で作成した重みファイルが[weights](https://kanazawa-it.box.com/s/lfyox8d2pab6dd741z6i4juj9ea9jc32)（金沢工業大学が提供するメールアドレスのみアクセス可）にあります。<br>
 
 ### 追従目標の特定
 追従目標の特定は、1フレーム前の目標座標を中心とした円型範囲を現在のフレームに生成し、範囲内に両脚が検出されればそれを追従対象としています。
@@ -45,17 +45,93 @@ follow_meは2D-LiDARとYOLOv8を用いた人追従機能を提供するROS2パ�
 </p>
 
 ## Demonstration Video
-<details>
-<summary>雑多な環境下での直線経路、曲線経路、直角経路による実験中の動画です。</summary>
-https://youtu.be/t0HLpdR9z9w
-</details>
+雑多な環境下での直線経路、曲線経路、直角経路による実験中の動画です。<br>
+👉 [【Demonstration Video】follow me](https://youtu.be/t0HLpdR9z9w)
 
 ## Requirement
+| 項目 | バージョン |
+| --- | --- |
+| Ubuntu | 20.04 |
+| ROS2 | Humble |
+| Python | 3.10.12 |
+| OpenCV | 4.8.1 |
+| YOLO | v8 |
 
 ## Installation
+ROS2のインストールは完了している前提です。
+<details>
+<summary>Step 1: yolov8_rosのインストール</summary>
+  
+  [Miguel Ángel González Santamarta](https://github.com/mgonzs13)氏の[yolov8_ros](https://github.com/mgonzs13/yolov8_ros.git)
+  の「[Installation](https://github.com/mgonzs13/yolov8_ros?tab=readme-ov-file#installation)」を参考にしてください。
 
+</details>
+
+<details>
+<summary>Step 2: 重みファイルのダウンロードとパス設定</summary>
+
+* **重みファイルのダウンロード** <br>
+  [best.pt](https://kanazawa-it.box.com/s/lfyox8d2pab6dd741z6i4juj9ea9jc32)（金沢工業大学が提供するメールアドレスのみアクセス可）
+  から重みファイルをダウンロードしてください。ダウンロード先はホームディレクトリ直下です（~/）。
+
+* **パス設定** <br>
+  [yolov8.launch.pyのパス指定](https://github.com/mgonzs13/yolov8_ros/blob/e4fb26e4c58f99b641e80ee0bf90bb4775632d69/yolov8_bringup/launch/yolov8.launch.py#L31C9-L31C36)の値を``~/best.pt``にしてください。<br>
+  変更前
+  ```python
+  def generate_launch_description():
+
+
+    #
+    # ARGS
+    #
+    model = LaunchConfiguration("model")
+    model_cmd = DeclareLaunchArgument(
+        "model",
+        default_value="yolov8m.pt",
+        description="Model name or path")
+  ```
+  変更後
+  ```py
+  def generate_launch_description():
+
+
+    #
+    # ARGS
+    #
+    model = LaunchConfiguration("model")
+    model_cmd = DeclareLaunchArgument(
+        "model",
+        default_value="~/best.pt",
+        description="Model name or path")
+  ```
+
+</details>
+
+
+<details>
+
+<summary>Step 3: ビルド</summary>
+  
+  ```bash
+  cd ~/ros2_ws/
+  colcon build --symlink-install
+  ```
+
+</details>
 
 ## Usage
+ロボット台車と2D-LiDARは起動済みであることが前提です。<br>
+yolov8.launch.pyを実行
+```bash
+ros2 launch yolov8_bringup yolov8.launch.py
+```
+follow_me.launch.pyを実行
+```bash
+ros2 launch recognition_by_lidar follow_me.launch.py
+```
+
+## TODO
+* アクション通信で実装
 
 ## Author
 金澤祐典 (金沢工業大学　工学部　ロボティクス学科　出村研究室)
