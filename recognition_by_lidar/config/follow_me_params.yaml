@@ -25,11 +25,11 @@
 /follow_me/base_controller:
   ros__parameters:
     # ロボットからみてtolerance[°]以内だったら積分制御しない視野角
-    tolerance: 1.0
+    tolerance: 0.0
     # 積分制御をし始める視野角[°]
     i_range: 3.0
     # 並進のPゲイン==========================
-    lkp: 0.3
+    lkp: 0.0
     # 旋回のPIDゲイン========================
     # Pゲイン
     akp: 0.005

@@ -13,7 +13,7 @@ class BaseController(Node):
     def __init__(self):
         super().__init__('base_controller')
         # Publisher
-        self.pub = self.create_publisher(Twist, '/cmd_vel', 10)
+        self.pub = self.create_publisher(Twist, '/kachaka/manual_control/cmd_vel', 10)
         self.data_pub = self.create_publisher(Point, '/follow_me/distance_angle_data', 10)
         # Subscriber
         self.create_subscription(Point, '/follow_me/target_point', self.callback, 10)
@@ -46,6 +46,7 @@ class BaseController(Node):
         # Value
         self.twist = Twist()
         self.target_angle = 0.0
+        self.before_angle = 0.0
         self.target_distance = 0.0
         self.target_x = 0.0
         self.target_y = 0.0
@@ -103,24 +104,24 @@ class BaseController(Node):
         return self.param_dict['akp']*self.target_angle
 
     # 微分制御量計算
-    def d_control(self, p_term):
-        return self.param_dict['akd']*(p_term - self.robot_angular_vel)
+    def d_control(self):
+        return self.param_dict['akd']*((self.target_angle - self.before_angle) / self.delta_t)
 
     # 積分制御量計算
-    def i_control(self, p_term, d_term):
+    def i_control(self):
         value = 0.0
-        diff = (p_term + d_term) - self.robot_angular_vel
 
-        if not diff < self.param_dict['tolerance'] and diff < self.param_dict['i_range']:
-            value = self.param_dict['aki']*self.target_angle*self.delta_t
+        # 詳しくはconfig/follow_me_params.yamlを参照
+        if not abs(self.target_angle) <= self.param_dict['tolerance']/2 and abs(self.target_angle) < self.param_dict['i_range']/2:
+            value = self.param_dict['aki']*((self.target_angle + self.before_angle) * self.delta_t / 2)
 
         return value
 
     def pid_update(self):
         # 制御量を計算
         p_term = self.p_control()
-        d_term = self.d_control(p_term)
-        i_term = self.i_control(p_term, d_term)
+        d_term = self.d_control()
+        i_term = self.i_control()
 
         linear_vel = self.param_dict['lkp']*self.target_distance
         angular_vel = -1*(p_term + i_term + d_term)
@@ -138,12 +139,13 @@ class BaseController(Node):
         return result
 
     def execute(self, rate=100):
-        start_time = time.time()
-        before_time = 0.0
+        before_time = time.time()
+        self.before_angle = self.target_angle
 
         while rclpy.ok():
-            self.delta_t = time.time() - start_time
             rclpy.spin_once(self)
+            self.delta_t = time.time() - before_time
+            before_time = time.time()
 
             # 許容範囲内外を判
             if self.in_range():
