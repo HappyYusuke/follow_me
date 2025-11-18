@@ -71,7 +71,7 @@ ROS2のインストールは完了している前提です。
 <summary>Step 2: 重みファイルのダウンロードとパス設定</summary>
 
 * **重みファイルのダウンロード** <br>
-  [best.pt](https://kanazawa-it.box.com/s/lfyox8d2pab6dd741z6i4juj9ea9jc32)（金沢工業大学が提供するメールアドレスのみアクセス可）
+  [best.pt](https://kanazawa-it.box.com/s/dpgnab1ihxors82bm6cs3cz6s2g099ns)（金沢工業大学が提供するメールアドレスのみアクセス可）
   から重みファイルをダウンロードしてください。ダウンロード先はホームディレクトリ直下です（~/）。
 
 * **パス設定** <br>
